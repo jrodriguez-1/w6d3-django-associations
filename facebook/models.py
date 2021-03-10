@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import EmailValidator, URLValidator
-
+# includes for generic relationships
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
@@ -19,7 +19,6 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.url}"
 
-
 class Expression(models.Model):
     expression = models.CharField(max_length=32)
     
@@ -27,12 +26,11 @@ class Expression(models.Model):
         return f"{self.expression}"
 
 
-
-
-
+## generic join table for posts/comments/replies + expressions
 class GenericExpression(models.Model):
+    # NOTE: if you rename 'content_type' or 'object_id', you must update all GenericRelations
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
+    object_id = models.PositiveIntegerField() 
     content = GenericForeignKey("content_type", "object_id")
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="g_expressions")
@@ -42,13 +40,12 @@ class GenericExpression(models.Model):
     def __str__(self):
         return f"{self.user} expressed {self.expression} for {self.content}"
 
-
-
+## content (posts, comments, replies)
 
 class Post(models.Model):
     text = models.CharField(max_length=1024)
     poster = models.ForeignKey(User, on_delete=models.CASCADE, related_name="posts")
-    expressions = GenericRelation(GenericExpression)
+    expressions = GenericRelation(GenericExpression) # required for reverse access of generic FK
 
     def __str__(self):
         return f"POST {self.text} by {self.poster}"
@@ -57,7 +54,7 @@ class Comment(models.Model):
     text = models.CharField(max_length=1024)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
-    expressions = GenericRelation(GenericExpression)
+    expressions = GenericRelation(GenericExpression) # required for reverse access of generic FK
 
     def __str__(self):
         return f"COMMENT {self.text} by {self.commenter} on {self.post}"
@@ -66,11 +63,13 @@ class Reply(models.Model):
     text = models.CharField(max_length=1024)
     replier = models.ForeignKey(User, on_delete=models.CASCADE, related_name="replies")
     comment = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="replies")
-    expressions = GenericRelation(GenericExpression)
+    expressions = GenericRelation(GenericExpression) # required for reverse access of generic FK
 
     def __str__(self):
         return f"REPLY: {self.text} by {self.replier} on {self.comment}"
 
+
+## join table for posts+expressions
 
 class PostExpression(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE,related_name="post_expressions")
