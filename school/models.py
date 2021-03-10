@@ -17,6 +17,8 @@ class Course(models.Model):
     name = models.CharField(max_length=64)
     description = models.CharField(max_length=128, default="")
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE, related_name="courses")
+    # access students from join table
+    students = models.ManyToManyField(Student, through="Enrollment", related_name="classes")
 
     def __str__(self):
         return f"Course: {self.name}"
